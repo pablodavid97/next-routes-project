@@ -5,7 +5,7 @@ import { MongoClient } from 'mongodb';
 export const getStaticProps = async () => {
     // fetch data from an API
     const client = await MongoClient.connect(
-        `mongodb+srv://${process.env.MONGO_ROOT_USR}:${process.env.MONGO_ROOT_PWD}@cluster0.t7sqe.mongodb.net/${process.env.MONGO_DB}?retryWrites=true&w=majority&appName=Cluster0`
+        `mongodb+srv://${process.env.NEXT_PUBLIC_MONGO_ROOT_USR}:${process.env.NEXT_PUBLIC_MONGO_ROOT_PWD}@cluster0.t7sqe.mongodb.net/${process.env.NEXT_PUBLIC_MONGO_DB}?retryWrites=true&w=majority&appName=Cluster0`
     );
     const db = client.db();
 

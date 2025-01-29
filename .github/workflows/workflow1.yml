@@ -1,0 +1,43 @@
+name: Deploy Next Routes App to Azure
+
+on:
+    push:
+        branches:
+            - master # Deploy on push to the master branch
+    workflow_dispatch:
+
+jobs:
+    build-and-deploy:
+        runs-on: ubuntu-latest
+        permissions:
+            id-token: write
+
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@v4
+
+            - name: Define image tag
+              run: echo "IMAGE_TAG=next-routes-project:${{ github.run_number }}" >> $GITHUB_ENV
+
+            # Build and push Docker image to Azure Container Registry (ACR)
+            - name: Build and push Docker image to ACR
+              run: |
+                  echo ${{ secrets.ACR_PASSWORD }} | docker login ${{ secrets.CONTAINER_REGISTRY_NAME }}.azurecr.io -u ${{ secrets.ACR_USERNAME }} --password-stdin
+                  docker build --build-arg MONGO_ROOT_USR=${{ secrets.MONGO_ROOT_USR }} \
+                               --build-arg MONGO_ROOT_PWD=${{ secrets.MONGO_ROOT_PWD }} \
+                               --build-arg MONGO_DB=${{ secrets.MONGO_DB }} \
+                               -t ${{ secrets.CONTAINER_REGISTRY_NAME }}.azurecr.io/$IMAGE_TAG .
+                  docker push ${{ secrets.CONTAINER_REGISTRY_NAME }}.azurecr.io/$IMAGE_TAG
+
+            - name: Login to Azure using Service Principal
+              uses: azure/login@v2
+              with:
+                  creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+            - name: Deploy to Azure Web App
+              id: deploy-to-webapp
+              uses: azure/webapps-deploy@v3
+              with:
+                  app-name: ${{ secrets.APP_NAME}}
+                  slot-name: 'Production'
+                  images: ${{ secrets.CONTAINER_REGISTRY_NAME }}.azurecr.io/${{ env.IMAGE_TAG }}
